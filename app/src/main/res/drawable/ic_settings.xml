@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Modern minimal sliders icon -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeWidth="2"
+        android:strokeColor="#000000"
+        android:strokeLineCap="round"
+        android:pathData="M4,6L20,6"/>
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeWidth="2"
+        android:strokeColor="#000000"
+        android:strokeLineCap="round"
+        android:pathData="M4,12L20,12"/>
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeWidth="2"
+        android:strokeColor="#000000"
+        android:strokeLineCap="round"
+        android:pathData="M4,18L20,18"/>
+
+    <!-- Slider knobs -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M8,6m-2,0a2,2 0,1,1 4,0a2,2 0,1,1 -4,0"/>
+
+    <path
+        android:fillColor="#000000"
+        android:pathData="M16,12m-2,0a2,2 0,1,1 4,0a2,2 0,1,1 -4,0"/>
+
+    <path
+        android:fillColor="#000000"
+        android:pathData="M10,18m-2,0a2,2 0,1,1 4,0a2,2 0,1,1 -4,0"/>
+</vector>
