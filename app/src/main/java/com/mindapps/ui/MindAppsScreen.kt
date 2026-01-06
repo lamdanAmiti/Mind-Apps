@@ -297,14 +297,6 @@ private fun BottomNavBar(
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        // White gap above the line
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(16.dp)
-                .background(MaterialTheme.colorScheme.background)
-        )
-        
         val borderColor = MaterialTheme.colorScheme.onBackground
         Row(
             modifier = Modifier
@@ -549,6 +541,9 @@ private fun SettingsTabContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(top = 130.dp, bottom = 24.dp)
         ) {
+            // Top padding to match bottom
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+
             // Remove apps from library
             item {
                 SettingsClickItem(
@@ -836,7 +831,7 @@ private fun LibraryContent(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 140.dp)
+                    .padding(top = 132.dp)
                     .pointerInput(pageCount) {
                         var totalDrag = 0f
                         detectVerticalDragGestures(
@@ -921,27 +916,13 @@ private fun LibraryContent(
         }
 
         // Sticky line at 130dp (where apps start) - content scrolls under this
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 130.dp)
-        ) {
-            // Solid black line (stays fixed at the top of the app list)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(2.dp)
-                    .background(MaterialTheme.colorScheme.onBackground)
-            )
-
-            // White gap below the line
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .background(MaterialTheme.colorScheme.background)
-            )
-        }
+                .height(2.dp)
+                .background(MaterialTheme.colorScheme.onBackground)
+        )
 
         // Top right - Done button in edit mode only
         if (isEditMode) {
