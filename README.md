@@ -1,14 +1,14 @@
-<p align="center">
+<p align="left">
   <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" width="120" alt="Mind Apps Icon"/>
 </p>
 
-<h1 align="center">Mind Apps</h1>
+<h1 align="left">Mind Apps</h1>
 
-<p align="center">
+<p align="left">
   <strong>An open-source app store for e-ink mindful apps</strong>
 </p>
 
-<p align="center">
+<p align="left">
   <a href="https://mindapps.dev">mindapps.dev</a>
 </p>
 
