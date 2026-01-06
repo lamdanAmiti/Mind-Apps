@@ -178,19 +178,20 @@ fun MindAppsScreen(
                             LoadingContent()
                         }
                         is UiState.Success -> {
-                            val libraryApps = state.apps.filter { 
-                                it.app.packageName in libraryAppIds && 
-                                it.app.packageName != "com.mindapps" 
+                            // Filter out com.mindapps from Library and Discover
+                            val libraryApps = state.apps.filter {
+                                it.app.packageName in libraryAppIds &&
+                                !it.app.packageName.startsWith("com.mindapps")
                             }
-                            val discoverApps = state.apps.filter { 
-                                it.app.packageName !in libraryAppIds && 
-                                it.app.packageName != "com.mindapps" 
+                            val discoverApps = state.apps.filter {
+                                it.app.packageName !in libraryAppIds &&
+                                !it.app.packageName.startsWith("com.mindapps")
                             }
 
-                            // Updates tab includes com.mindapps if it needs an update
-                            val updatesApps = state.apps.filter { 
-                                it.app.packageName in libraryAppIds && 
-                                it.state == AppState.UPDATE_AVAILABLE 
+                            // Updates tab: include library apps with updates AND com.mindapps if it has an update
+                            val updatesApps = state.apps.filter {
+                                it.state == AppState.UPDATE_AVAILABLE &&
+                                (it.app.packageName in libraryAppIds || it.app.packageName.startsWith("com.mindapps"))
                             }
 
                             when (selectedTab) {
