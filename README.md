@@ -9,7 +9,7 @@
 </p>
 
 <p align="left">
-  <a href="https://mindapps.dev">mindapps.dev</a>
+  Contact: <a href="https://mindapps.dev">mindapps.dev</a>
 </p>
 
 ---
