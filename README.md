@@ -22,7 +22,7 @@ Mind Apps is an open-source app store specifically designed for e-ink mindful ap
 
 <p align="center">
   <img src="images/Screenshot_20260105-182149.png" width="250" alt="Library"/>
-  <img src="images/Screenshot_20260105-183012.png" width="250" alt="Discover"/>
+  <img src="images/Screenshot_20260105-190136.png" width="250" alt="Discover"/>
   <img src="images/Screenshot_20260105-183218.png" width="250" alt="App Details"/>
 </p>
 
