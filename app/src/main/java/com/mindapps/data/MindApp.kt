@@ -19,7 +19,16 @@ data class MindApp(
     val packageName: String,
 
     @SerializedName("author")
-    val author: String
+    val author: String,
+
+    @SerializedName("app_info")
+    val appInfo: String = "",
+
+    @SerializedName("app_release")
+    val appRelease: String = "",
+
+    @SerializedName("app_tags")
+    val appTags: List<String> = emptyList()
 )
 
 data class MindAppsResponse(

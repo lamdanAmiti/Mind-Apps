@@ -71,7 +71,10 @@ class MindAppsViewModel(application: Application) : AndroidViewModel(application
 
     fun loadApps() {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
+            // Only show loading state if we don't have cached data
+            if (cachedApps.isEmpty()) {
+                _uiState.value = UiState.Loading
+            }
 
             val result = api.fetchApps()
             result.fold(
@@ -80,7 +83,11 @@ class MindAppsViewModel(application: Application) : AndroidViewModel(application
                     updateAppStates(apps)
                 },
                 onFailure = { error ->
-                    _uiState.value = UiState.Error(error.message ?: "Unknown error")
+                    // Only show error if we don't have cached data
+                    if (cachedApps.isEmpty()) {
+                        _uiState.value = UiState.Error(error.message ?: "Unknown error")
+                    }
+                    // If we have cached data, silently keep showing it
                 }
             )
         }

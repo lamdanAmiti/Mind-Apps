@@ -25,7 +25,7 @@
     <string name="settings_update_notifications">Update Notifications</string>
     <string name="settings_update_notifications_desc">Get notified when app updates are available. Runs in the background to check for updates.</string>
     <string name="settings_about">ABOUT</string>
-    <string name="settings_about_desc">Mind Apps helps you discover and install curated applications.\n\nVersion 1.0</string>
+    <string name="settings_about_desc">Mind Apps helps you discover and install curated apps that were developed with intention for mindfulness and e-ink compatibility.\n\nVersion 1.0</string>
 
     <!-- Notifications -->
     <string name="notification_channel_name">App Updates</string>

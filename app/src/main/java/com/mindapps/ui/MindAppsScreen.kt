@@ -1299,111 +1299,152 @@ private fun DiscoverContent(
         if (searchQuery.isBlank()) {
             sortedApps
         } else {
-            sortedApps.filter { 
+            sortedApps.filter {
                 it.app.name.contains(searchQuery, ignoreCase = true) ||
                 it.app.packageName.contains(searchQuery, ignoreCase = true)
             }
         }
     }
     val borderColor = MaterialTheme.colorScheme.onBackground
+    var selectedApp by remember { mutableStateOf<MindAppWithState?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Search bar - moved lower
-        Spacer(modifier = Modifier.height(48.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp)
-                .border(
-                    width = 2.dp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .padding(horizontal = 16.dp, vertical = 14.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Search,
-                    contentDescription = "Search",
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Box(modifier = Modifier.weight(1f)) {
-                    BasicTextField(
-                        value = searchQuery,
-                        onValueChange = onSearchQueryChange,
-                        singleLine = true,
-                        textStyle = TextStyle(
-                            fontFamily = titleFontFamily,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onBackground
-                        ),
-                        modifier = Modifier.fillMaxWidth()
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Scrollable content with padding for sticky header
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Spacer to account for sticky header
+            Spacer(modifier = Modifier.height(130.dp))
+
+            // Apps list - no border, edge to edge dividers
+            if (apps.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "You've added all the apps",
+                        fontFamily = appNameFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(
-                        onClick = { onSearchQueryChange("") },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = "Clear",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onBackground
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    itemsIndexed(filteredApps, key = { index, it -> "${it.app.packageName}_$index" }) { index, appWithState ->
+                        DiscoverAppItem(
+                            appWithState = appWithState,
+                            imageLoader = imageLoader,
+                            onAddToLibrary = { onAddToLibrary(appWithState) },
+                            onView = { selectedApp = appWithState }
                         )
+                        // Perforated divider between items (edge to edge)
+                        if (index < filteredApps.size - 1) {
+                            DiscoverDivider()
+                        }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Strong solid line on top (edge to edge)
-        Box(
+        // Sticky header with search bar
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(2.dp)
-                .background(borderColor)
-        )
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            Spacer(modifier = Modifier.height(70.dp))
 
-        // Apps list - no border, edge to edge dividers
-        if (apps.isEmpty()) {
+            // Search bar
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "You've added all the apps",
-                    fontFamily = appNameFontFamily,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                itemsIndexed(filteredApps, key = { index, it -> "${it.app.packageName}_$index" }) { index, appWithState ->
-                    DiscoverAppItem(
-                        appWithState = appWithState,
-                        imageLoader = imageLoader,
-                        onAddToLibrary = { onAddToLibrary(appWithState) }
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        shape = RoundedCornerShape(10.dp)
                     )
-                    // Perforated divider between items (edge to edge)
-                    if (index < filteredApps.size - 1) {
-                        DiscoverDivider()
+                    .padding(horizontal = 14.dp, vertical = 12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Search,
+                        contentDescription = "Search",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Box(modifier = Modifier.weight(1f)) {
+                        BasicTextField(
+                            value = searchQuery,
+                            onValueChange = onSearchQueryChange,
+                            singleLine = true,
+                            textStyle = TextStyle(
+                                fontFamily = titleFontFamily,
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.onBackground
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(
+                            onClick = { onSearchQueryChange("") },
+                            modifier = Modifier.size(20.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = "Clear",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        // Sticky line at 130dp
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 130.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(2.dp)
+                    .background(MaterialTheme.colorScheme.onBackground)
+            )
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .background(MaterialTheme.colorScheme.background)
+            )
+        }
+
+        // App detail overlay
+        selectedApp?.let { app ->
+            AppDetailOverlay(
+                appWithState = app,
+                imageLoader = imageLoader,
+                onBack = { selectedApp = null },
+                onAddToLibrary = {
+                    onAddToLibrary(app)
+                    selectedApp = null
+                }
+            )
         }
     }
 }
@@ -1430,13 +1471,19 @@ private fun DiscoverDivider() {
 private fun DiscoverAppItem(
     appWithState: MindAppWithState,
     imageLoader: ImageLoader,
-    onAddToLibrary: () -> Unit
+    onAddToLibrary: () -> Unit,
+    onView: () -> Unit
 ) {
     val app = appWithState.app
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(
+                onClick = onView,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
             .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1484,6 +1531,17 @@ private fun DiscoverAppItem(
             )
         }
 
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // View text
+        Text(
+            text = "View",
+            fontFamily = appNameFontFamily,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
         Spacer(modifier = Modifier.width(12.dp))
 
         // Plus button to add to library
@@ -1512,6 +1570,189 @@ private fun DiscoverAppItem(
                     end = Offset(size.width / 2, size.height - padding),
                     strokeWidth = strokeWidth,
                     cap = StrokeCap.Round
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppDetailOverlay(
+    appWithState: MindAppWithState,
+    imageLoader: ImageLoader,
+    onBack: () -> Unit,
+    onAddToLibrary: () -> Unit
+) {
+    val app = appWithState.app
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Scrollable content
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            contentPadding = PaddingValues(top = 48.dp, bottom = 100.dp)
+        ) {
+            // Back button
+            item {
+                Text(
+                    text = "← Back",
+                    fontFamily = appNameFontFamily,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.clickable(
+                        onClick = onBack,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    )
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            // Icon, name, and tags row
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AsyncImage(
+                        model = app.icon,
+                        contentDescription = app.name,
+                        imageLoader = imageLoader,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .border(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .background(MaterialTheme.colorScheme.background),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = app.name,
+                        fontFamily = appNameFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    if (app.appTags.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        app.appTags.forEachIndexed { index, tag ->
+                            Text(
+                                text = tag,
+                                fontFamily = appNameFontFamily,
+                                fontWeight = FontWeight.Normal,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            if (index < app.appTags.size - 1) {
+                                Text(
+                                    text = " · ",
+                                    fontFamily = appNameFontFamily,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Author
+            item {
+                Text(
+                    text = app.author,
+                    fontFamily = titleFontFamily,
+                    fontWeight = FontWeight.Normal,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+
+            // Divider
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.onBackground)
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+
+            // App info/description
+            if (app.appInfo.isNotEmpty()) {
+                item {
+                    Text(
+                        text = app.appInfo,
+                        fontFamily = titleFontFamily,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        lineHeight = 22.sp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+
+            // Release date
+            if (app.appRelease.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Released: ${app.appRelease}",
+                        fontFamily = titleFontFamily,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            }
+        }
+
+        // Fixed bottom button - white background with black plus
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .background(
+                        MaterialTheme.colorScheme.background,
+                        RoundedCornerShape(10.dp)
+                    )
+                    .clickable(
+                        onClick = onAddToLibrary,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    )
+                    .padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "+",
+                    fontFamily = appNameFontFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
