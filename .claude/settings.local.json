@@ -16,7 +16,14 @@
       "Bash(dir \"C:\\\\Users\\\\chica\\\\AndroidStudioProjects\\\\mindapps\\\\app\\\\src\\\\main\\\\res\" /b)",
       "Bash(dir:*)",
       "WebSearch",
-      "Bash(copy \"C:\\\\Users\\\\chica\\\\stack-sans-notch-latin-600-normal.ttf\" \"C:\\\\Users\\\\chica\\\\AndroidStudioProjects\\\\mindapps\\\\app\\\\src\\\\main\\\\res\\\\font\\\\stack_sans_notch_semibold.ttf\")"
+      "Bash(copy \"C:\\\\Users\\\\chica\\\\stack-sans-notch-latin-600-normal.ttf\" \"C:\\\\Users\\\\chica\\\\AndroidStudioProjects\\\\mindapps\\\\app\\\\src\\\\main\\\\res\\\\font\\\\stack_sans_notch_semibold.ttf\")",
+      "Bash(./gradlew assembleRelease:*)",
+      "Bash(powershell -Command \"[System.Web.Security.Membership]::GeneratePassword\\(16, 4\\)\")",
+      "Bash(powershell -Command \"$chars = ''abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#%^&*''; -join \\(1..16 | ForEach-Object { $chars[\\(Get-Random -Maximum $chars.Length\\)] }\\)\")",
+      "Bash(powershell -Command:*)",
+      "Bash(keytool:*)",
+      "Bash(./gradlew clean:*)",
+      "Bash(./gradlew:*)"
     ]
   }
 }

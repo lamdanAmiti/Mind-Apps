@@ -1,6 +1,7 @@
 *.iml
 .gradle
 /local.properties
+/.claude
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
@@ -15,3 +16,8 @@
 local.properties
 
 .env
+
+# Signing
+keystore.properties
+*.jks
+*.keystore

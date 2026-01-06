@@ -5,6 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +20,9 @@ class PreferencesManager(private val context: Context) {
         private val SETUP_COMPLETED = booleanPreferencesKey("setup_completed")
         private val UPDATE_NOTIFICATIONS_ENABLED = booleanPreferencesKey("update_notifications_enabled")
         private val LIBRARY_APP_IDS = stringSetPreferencesKey("library_app_ids")
+        private val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
+        private val AVAILABLE_UPDATES = stringSetPreferencesKey("available_updates")
+        private val AVAILABLE_UPDATES_JSON = stringPreferencesKey("available_updates_json")
     }
 
     val isSetupCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -30,6 +35,43 @@ class PreferencesManager(private val context: Context) {
 
     val libraryAppIds: Flow<Set<String>> = context.dataStore.data.map { preferences ->
         preferences[LIBRARY_APP_IDS] ?: emptySet()
+    }
+
+    val lastUpdateCheck: Flow<Long> = context.dataStore.data.map { preferences ->
+        preferences[LAST_UPDATE_CHECK] ?: 0L
+    }
+
+    val availableUpdates: Flow<Set<String>> = context.dataStore.data.map { preferences ->
+        preferences[AVAILABLE_UPDATES] ?: emptySet()
+    }
+
+    val availableUpdatesJson: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[AVAILABLE_UPDATES_JSON] ?: "{}"
+    }
+
+    suspend fun setLastUpdateCheck(timestamp: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[LAST_UPDATE_CHECK] = timestamp
+        }
+    }
+
+    suspend fun setAvailableUpdates(packageNames: Set<String>) {
+        context.dataStore.edit { preferences ->
+            preferences[AVAILABLE_UPDATES] = packageNames
+        }
+    }
+
+    suspend fun setAvailableUpdatesJson(json: String) {
+        context.dataStore.edit { preferences ->
+            preferences[AVAILABLE_UPDATES_JSON] = json
+        }
+    }
+
+    suspend fun clearAvailableUpdates() {
+        context.dataStore.edit { preferences ->
+            preferences[AVAILABLE_UPDATES] = emptySet()
+            preferences[AVAILABLE_UPDATES_JSON] = "{}"
+        }
     }
 
     suspend fun setSetupCompleted(completed: Boolean) {

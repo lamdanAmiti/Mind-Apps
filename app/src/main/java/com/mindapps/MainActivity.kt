@@ -51,8 +51,11 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Schedule update check worker
+        // Schedule periodic update check worker
         UpdateCheckWorker.schedule(this)
+
+        // Also trigger an immediate check when app opens
+        UpdateCheckWorker.checkNow(this)
 
         setContent {
             MindAppsNavigation()

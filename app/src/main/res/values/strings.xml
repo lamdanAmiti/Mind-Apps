@@ -30,6 +30,7 @@
     <!-- Notifications -->
     <string name="notification_channel_name">App Updates</string>
     <string name="notification_channel_description">Notifications for available app updates</string>
+    <string name="notification_tap_to_update">Tap to update</string>
     <plurals name="notification_updates_available">
         <item quantity="one">%d update available</item>
         <item quantity="other">%d updates available</item>
