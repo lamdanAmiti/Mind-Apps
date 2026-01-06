@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -121,6 +123,27 @@ fun MindAppsScreen(
     androidx.compose.runtime.LaunchedEffect(savedLibraryAppIds) {
         if (savedLibraryAppIds.isNotEmpty() && libraryAppIds.isEmpty()) {
             libraryAppIds = savedLibraryAppIds
+        }
+    }
+
+    // Auto-add installed apps to library
+    androidx.compose.runtime.LaunchedEffect(uiState, savedLibraryAppIds) {
+        val state = uiState
+        if (state is UiState.Success) {
+            // Combine current and saved library IDs to check against
+            val allLibraryIds = libraryAppIds + savedLibraryAppIds
+            val installedApps = state.apps.filter {
+                (it.state == AppState.INSTALLED || it.state == AppState.UPDATE_AVAILABLE) &&
+                !it.app.packageName.startsWith("com.mindapps") &&
+                it.app.packageName !in allLibraryIds
+            }
+            if (installedApps.isNotEmpty()) {
+                val newIds = installedApps.map { it.app.packageName }.toSet()
+                libraryAppIds = libraryAppIds + savedLibraryAppIds + newIds
+                newIds.forEach { packageName ->
+                    preferencesManager.addToLibrary(packageName)
+                }
+            }
         }
     }
 
@@ -761,6 +784,9 @@ private fun SettingsPerforatedDivider() {
     }
 }
 
+private const val APPS_PER_PAGE = 4
+private const val SWIPE_THRESHOLD = 50f
+
 @Composable
 private fun LibraryContent(
     apps: List<MindAppWithState>,
@@ -772,71 +798,129 @@ private fun LibraryContent(
     onToggleEditMode: () -> Unit,
     onRemoveFromLibrary: (MindAppWithState) -> Unit
 ) {
+    // Group apps into pages
+    val pages = remember(apps) {
+        apps.chunked(APPS_PER_PAGE)
+    }
+    val pageCount = maxOf(1, pages.size)
+    var currentPage by rememberSaveable { mutableStateOf(0) }
+
+    // Reset to first page if pages change and current page is out of bounds
+    androidx.compose.runtime.LaunchedEffect(pageCount) {
+        if (currentPage >= pageCount) {
+            currentPage = maxOf(0, pageCount - 1)
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        // Scrollable content
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 130.dp, bottom = 24.dp)
-        ) {
-            if (apps.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Add apps to your library",
-                            fontFamily = titleFontFamily,
-                            fontWeight = FontWeight.Normal,
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+        if (apps.isEmpty()) {
+            // Empty state
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 130.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Add apps to your library",
+                    fontFamily = titleFontFamily,
+                    fontWeight = FontWeight.Normal,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                )
+            }
+        } else {
+            // Paged content with instant page switching (no animation)
+            val pageApps = pages.getOrElse(currentPage) { emptyList() }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 140.dp)
+                    .pointerInput(pageCount) {
+                        var totalDrag = 0f
+                        detectVerticalDragGestures(
+                            onDragStart = { totalDrag = 0f },
+                            onDragEnd = {
+                                if (totalDrag < -SWIPE_THRESHOLD && currentPage < pageCount - 1) {
+                                    currentPage++
+                                } else if (totalDrag > SWIPE_THRESHOLD && currentPage > 0) {
+                                    currentPage--
+                                }
+                                totalDrag = 0f
+                            },
+                            onVerticalDrag = { _, dragAmount ->
+                                totalDrag += dragAmount
+                            }
                         )
+                    }
+            ) {
+                pageApps.forEachIndexed { index, appWithState ->
+                    LibraryAppItem(
+                        appWithState = appWithState,
+                        imageLoader = imageLoader,
+                        onAction = { onAppAction(appWithState) },
+                        onUninstall = { onUninstall(appWithState.app) },
+                        isEditMode = isEditMode,
+                        onRemoveFromLibrary = { onRemoveFromLibrary(appWithState) }
+                    )
+                    // Add perforated divider between items (not after the last one)
+                    if (index < pageApps.size - 1) {
+                        PerforatedDivider()
                     }
                 }
-            } else {
-                // App items with edge-to-edge perforated dividers
-                apps.forEachIndexed { index, appWithState ->
-                    item(key = "${appWithState.app.packageName}_library_$index") {
-                        LibraryAppItem(
-                            appWithState = appWithState,
-                            imageLoader = imageLoader,
-                            onAction = { onAppAction(appWithState) },
-                            onUninstall = { onUninstall(appWithState.app) },
-                            isEditMode = isEditMode,
-                            onRemoveFromLibrary = { onRemoveFromLibrary(appWithState) }
-                        )
-                    }
-                    // Add perforated divider between items (not after the last one)
-                    if (index < apps.size - 1) {
-                        item(key = "${appWithState.app.packageName}_divider_$index") {
-                            PerforatedDivider()
+            }
+        }
+
+        // Sticky header - title and page dots
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(top = 70.dp, bottom = 16.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    fontFamily = titleFontFamily,
+                    fontWeight = FontWeight.Light,
+                    fontSize = 32.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    letterSpacing = (-1).sp
+                )
+
+                // Page indicator dots (only show if more than 1 page)
+                if (pageCount > 1) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        repeat(pageCount) { index ->
+                            Box(
+                                modifier = Modifier
+                                    .size(if (index == currentPage) 8.dp else 6.dp)
+                                    .background(
+                                        if (index == currentPage)
+                                            MaterialTheme.colorScheme.onBackground
+                                        else
+                                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
+                                        CircleShape
+                                    )
+                            )
                         }
                     }
                 }
             }
         }
 
-        // Sticky header - title only (original position)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(top = 70.dp, bottom = 16.dp, start = 24.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                fontFamily = titleFontFamily,
-                fontWeight = FontWeight.Light,
-                fontSize = 32.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                letterSpacing = (-1).sp
-            )
-        }
-        
-        // Sticky line at 150dp (where apps start) - content scrolls under this
+        // Sticky line at 130dp (where apps start) - content scrolls under this
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -849,7 +933,7 @@ private fun LibraryContent(
                     .height(2.dp)
                     .background(MaterialTheme.colorScheme.onBackground)
             )
-            
+
             // White gap below the line
             Spacer(
                 modifier = Modifier
@@ -1309,50 +1393,83 @@ private fun DiscoverContent(
     val borderColor = MaterialTheme.colorScheme.onBackground
     var selectedApp by remember { mutableStateOf<MindAppWithState?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Scrollable content with padding for sticky header
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Spacer to account for sticky header
-            Spacer(modifier = Modifier.height(130.dp))
+    // Paging for discover
+    val pages = remember(filteredApps) {
+        filteredApps.chunked(APPS_PER_PAGE)
+    }
+    val pageCount = maxOf(1, pages.size)
+    var currentPage by rememberSaveable { mutableStateOf(0) }
 
-            // Apps list - no border, edge to edge dividers
-            if (apps.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "You've added all the apps",
-                        fontFamily = appNameFontFamily,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 24.dp)
-                ) {
-                    itemsIndexed(filteredApps, key = { index, it -> "${it.app.packageName}_$index" }) { index, appWithState ->
-                        DiscoverAppItem(
-                            appWithState = appWithState,
-                            imageLoader = imageLoader,
-                            onAddToLibrary = { onAddToLibrary(appWithState) },
-                            onView = { selectedApp = appWithState }
+    // Reset to first page if filtered results change
+    androidx.compose.runtime.LaunchedEffect(filteredApps.size) {
+        currentPage = 0
+    }
+
+    // Reset if current page is out of bounds
+    androidx.compose.runtime.LaunchedEffect(pageCount) {
+        if (currentPage >= pageCount) {
+            currentPage = maxOf(0, pageCount - 1)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Apps list with paging
+        if (filteredApps.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 130.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (apps.isEmpty()) "You've added all the apps" else "No apps found",
+                    fontFamily = appNameFontFamily,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+        } else {
+            val pageApps = pages.getOrElse(currentPage) { emptyList() }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 140.dp)
+                    .pointerInput(pageCount) {
+                        var totalDrag = 0f
+                        detectVerticalDragGestures(
+                            onDragStart = { totalDrag = 0f },
+                            onDragEnd = {
+                                if (totalDrag < -SWIPE_THRESHOLD && currentPage < pageCount - 1) {
+                                    currentPage++
+                                } else if (totalDrag > SWIPE_THRESHOLD && currentPage > 0) {
+                                    currentPage--
+                                }
+                                totalDrag = 0f
+                            },
+                            onVerticalDrag = { _, dragAmount ->
+                                totalDrag += dragAmount
+                            }
                         )
-                        // Perforated divider between items (edge to edge)
-                        if (index < filteredApps.size - 1) {
-                            DiscoverDivider()
-                        }
+                    }
+            ) {
+                pageApps.forEachIndexed { index, appWithState ->
+                    DiscoverAppItem(
+                        appWithState = appWithState,
+                        imageLoader = imageLoader,
+                        onAddToLibrary = { onAddToLibrary(appWithState) },
+                        onView = { selectedApp = appWithState }
+                    )
+                    // Perforated divider between items (edge to edge)
+                    if (index < pageApps.size - 1) {
+                        DiscoverDivider()
                     }
                 }
             }
         }
 
-        // Sticky header with search bar
+        // Sticky header with search bar and page dots
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1360,52 +1477,81 @@ private fun DiscoverContent(
         ) {
             Spacer(modifier = Modifier.height(70.dp))
 
-            // Search bar
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                    .padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Search,
-                        contentDescription = "Search",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Box(modifier = Modifier.weight(1f)) {
-                        BasicTextField(
-                            value = searchQuery,
-                            onValueChange = onSearchQueryChange,
-                            singleLine = true,
-                            textStyle = TextStyle(
-                                fontFamily = titleFontFamily,
-                                fontSize = 15.sp,
-                                color = MaterialTheme.colorScheme.onBackground
-                            ),
-                            modifier = Modifier.fillMaxWidth()
+                // Search bar
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            shape = RoundedCornerShape(10.dp)
                         )
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Search,
+                            contentDescription = "Search",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Box(modifier = Modifier.weight(1f)) {
+                            BasicTextField(
+                                value = searchQuery,
+                                onValueChange = onSearchQueryChange,
+                                singleLine = true,
+                                textStyle = TextStyle(
+                                    fontFamily = titleFontFamily,
+                                    fontSize = 15.sp,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(
+                                onClick = { onSearchQueryChange("") },
+                                modifier = Modifier.size(20.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Close,
+                                    contentDescription = "Clear",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onBackground
+                                )
+                            }
+                        }
                     }
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(
-                            onClick = { onSearchQueryChange("") },
-                            modifier = Modifier.size(20.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Close,
-                                contentDescription = "Clear",
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.onBackground
+                }
+
+                // Page indicator dots (only show if more than 1 page)
+                if (pageCount > 1) {
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        repeat(pageCount) { index ->
+                            Box(
+                                modifier = Modifier
+                                    .size(if (index == currentPage) 8.dp else 6.dp)
+                                    .background(
+                                        if (index == currentPage)
+                                            MaterialTheme.colorScheme.onBackground
+                                        else
+                                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
+                                        CircleShape
+                                    )
                             )
                         }
                     }
