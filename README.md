@@ -31,7 +31,7 @@ Mind Apps is an open-source app store specifically designed for e-ink mindful ap
 At launch, Mind Apps includes:
 
 - **CalmCast** — Podcast player for e-ink
-- **CalmDirectory** — File manager for e-ink
+- **CalmDirectory** — Directory for e-ink
 - **inkOS** — Launcher for e-ink devices
 - **KOReader** — Document reader
 - **InkMessage** — E-ink fork of QUIK messages
